@@ -77,16 +77,15 @@ async function handleCreateRace() {
 	// render starting UI
 	renderAt('#race', renderRaceStartView())
 
-	// TODO - Get player_id and track_id from the store
+	const {track_id, player_id} = store;
 	
-	// const race = TODO - invoke the API call to create the race, then save the result
+	const race = createRace(track_id, player_id);
 
-	// TODO - update the store with the race id
+	store.race_id = race.id;
+	
+	runCountdown();
 
-	// The race has been created, now start the countdown
-	// TODO - call the async function runCountdown
-
-	// TODO - call the async function startRace
+	startRace();
 
 	// TODO - call the async function runRace
 }
@@ -118,14 +117,14 @@ async function runCountdown() {
 		await delay(1000)
 		let timer = 3
 
-		return new Promise(resolve => {
-			// TODO - use Javascript's built in setInterval method to count down once per second
-
-			// run this DOM manipulation to decrement the countdown for the user
-			document.getElementById('big-numbers').innerHTML = --timer
-
-			// TODO - if the countdown is done, clear the interval, resolve the promise, and return
-
+	return new Promise(resolve => {
+		const interval = setInterval(function(){
+			if(timer > 0) {
+				document.getElementById('big-numbers').innerHTML = --timer
+			} else {
+				clearInterval(interval);
+				resolve();
+			}},1000);
 		})
 	} catch(error) {
 		console.log(error);
@@ -201,7 +200,6 @@ function renderRacerCard(racer) {
 }
 
 function renderTrackCards(tracks) {
-	console.log(tracks);
 	if (!tracks.length) {
 		return `
 			<h4>Loading Tracks...</4>
@@ -362,8 +360,17 @@ function createRace(player_id, track_id) {
 	.catch(err => console.log("Problem with createRace request::", err))
 }
 
-function getRace(id) {
-	// GET request to `${SERVER}/api/races/${id}`
+async function getRace(id) {
+	try {
+		const data = await fetch(`$${SERVER}/api/races/${id}`,{
+			method: "GET",
+			dataType: "jsonp",
+			...defaultFetchOpts(),
+		});
+		return data.json();
+	} catch(error) {
+		console.log(error);
+	}
 }
 
 function startRace(id) {
@@ -376,7 +383,8 @@ function startRace(id) {
 }
 
 function accelerate(id) {
-	// POST request to `${SERVER}/api/races/${id}/accelerate`
-	// options parameter provided as defaultFetchOpts
-	// no body or datatype needed for this request
+	return fetch(`${SERVER}/api/races/${id}/accelerate`, {
+		method: 'POST',
+		...defaultFetchOpts(),
+	})
 }
